@@ -1,0 +1,182 @@
+ {% extends "base.html" %} {% block title %}API配置管理 - AI穿搭助手{% endblock %} {% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- API配置表单 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0">API配置管理</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="apiKeyForm">
+                        {{ form.hidden_tag() }}
+
+                        <!-- 模型选择 -->
+                        <div class="mb-3">
+                            {{ form.model_type.label(class="form-label") }} {{ form.model_type(class="form-select") }} {% if form.model_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.model_type.errors %} {{ error }} {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- API Key -->
+                        <div class="mb-3">
+                            {{ form.api_key.label(class="form-label") }} {{ form.api_key(class="form-control", autocomplete="off") }} {% if form.api_key.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.api_key.errors %} {{ error }} {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Secret Key (百度) -->
+                        <div class="mb-3" id="secretKeyField">
+                            {{ form.api_secret.label(class="form-label") }} {{ form.api_secret(class="form-control", autocomplete="off") }}
+                            <div class="form-text">{{ form.api_secret.description }}</div>
+                            {% if form.api_secret.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.api_secret.errors %} {{ error }} {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- AppID (讯飞) -->
+                        <div class="mb-3" id="appIdField">
+                            {{ form.app_id.label(class="form-label") }} {{ form.app_id(class="form-control", autocomplete="off") }}
+                            <div class="form-text">{{ form.app_id.description }}</div>
+                            {% if form.app_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.app_id.errors %} {{ error }} {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">保存配置</button> {% if config and config.is_valid %}
+                            <button type="button" class="btn btn-outline-primary" onclick="testAPI()">
+                                测试API连接
+                            </button> {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- API配置指南 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">配置指南</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="apiGuideAccordion">
+                        {% for model_key, info in model_info.items() %}
+                        <div class="accordion-item" id="guide_{{ model_key }}"></div>
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{ model_key }}">
+                                    {{ info.name }} 配置说明
+                                </button>
+                        </h2>
+                        <div id="collapse_{{ model_key }}" class="accordion-collapse collapse" data-bs-parent="#apiGuideAccordion">
+                            <div class="accordion-body">
+                                <h6>必需信息：</h6>
+                                <ul></ul>
+                                {% for field in info.requires %}
+                                <li>{{ field }}</li>
+                                {% endfor %}
+                                </ul>
+
+                                <h6>获取步骤：</h6>
+                                {% if model_key == 'baidu' %}
+                                <ol>
+                                    <li>访问 <a href="https://cloud.baidu.com/product/wenxinworkshop" target="_blank">百度智能云</a></li>
+                                    <li>注册/登录账号</li>
+                                    <li>开通文心一言服务</li>
+                                    <li>创建应用获取API Key和Secret Key</li>
+                                </ol>
+                                {% elif model_key == 'xunfei' %}
+                                <ol></ol>
+                                <li>访问 <a href="https://www.xfyun.cn/services/spark" target="_blank">讯飞开放平台</a></li>
+                                <li>注册/登录账号</li>
+                                <li>创建新应用</li>
+                                <li>获取APPID和API Key</li>
+                                </ol>
+                                {% endif %}
+
+                                <p class="mt-3">
+                                    <a href="{{ info.help_url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                            查看详细文档
+                                        </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %} {% block scripts %} {{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modelType = document.getElementById('model_type');
+        const secretKeyField = document.getElementById('secretKeyField');
+        const appIdField = document.getElementById('appIdField');
+
+        function updateFields() {
+            const selectedModel = modelType.value;
+
+            // 显示/隐藏相关字段
+            if (selectedModel === 'baidu') {
+                secretKeyField.style.display = 'block';
+                appIdField.style.display = 'none';
+            } else if (selectedModel === 'xunfei') {
+                secretKeyField.style.display = 'none';
+                appIdField.style.display = 'block';
+            }
+
+            // 展开对应的配置指南
+            document.querySelectorAll('.accordion-collapse').forEach(item => {
+                item.classList.remove('show');
+            });
+            document.querySelector(`#collapse_${selectedModel}`).classList.add('show');
+        }
+
+        // 初始状态
+        updateFields();
+
+        // 监听变化
+        modelType.addEventListener('change', updateFields);
+    });
+
+    function testAPI() {
+        const button = event.target;
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = '测试中...';
+
+        fetch('/api_keys/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('API配置测试成功！');
+                } else {
+                    alert('API配置测试失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('测试请求失败：' + error);
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = originalText;
+            });
+    }
+</script>
+{% endblock %}

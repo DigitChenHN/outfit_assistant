@@ -1,0 +1,172 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ '编辑衣物' if clothing else '添加衣物' }} - AI穿搭助手{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">{{ '编辑衣物' if clothing else '添加衣物' }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="clothingForm">
+                        <!-- 分类选择 -->
+                        <div class="mb-3">
+                            <label for="category" class="form-label">分类</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">请选择分类</option>
+                                {% for key, name in categories.items() %}
+                                <option value="{{ key }}" 
+                                    {{ 'selected' if clothing and clothing.category == key }}>
+                                    {{ name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- 描述 -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">详细描述</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" required maxlength="200" 
+                                      placeholder="例如：{{ description_examples|random }}"
+                                      oninput="updateCharCount(this)">{{ clothing.description if clothing else '' }}</textarea>
+                            <div class="d-flex justify-content-between">
+                                <div class="form-text">
+                                    请详细描述衣物的特征，包括颜色、款式、材质等
+                                </div>
+                                <small class="text-muted" id="charCount">0/200</small>
+                            </div>
+                            <div class="mt-2">
+                                <p class="mb-2 text-muted small">描述示例：</p>
+                                <div class="description-examples">
+                                    {% for example in description_examples %}
+                                    <span class="badge bg-light text-dark me-2 mb-2 example-tag" 
+                                          role="button" 
+                                          onclick="useExample(this)">{{ example }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 季节多选 -->
+                        <div class="mb-3">
+                            <label class="form-label">适用季节</label>
+                            <div class="btn-group d-flex flex-wrap" role="group">
+                                {% for season in seasons %}
+                                <input type="checkbox" class="btn-check" name="seasons" 
+                                       id="season_{{ season }}" value="{{ season }}"
+                                       {{ 'checked' if clothing and season in clothing.seasons_list }}>
+                                <label class="btn btn-outline-primary me-2 mb-2" 
+                                       for="season_{{ season }}">{{ season }}</label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- 场合多选 -->
+                        <div class="mb-3">
+                            <label class="form-label">适用场合</label>
+                            <div class="btn-group d-flex flex-wrap" role="group">
+                                {% for occasion in occasions %}
+                                <input type="checkbox" class="btn-check" name="occasions" 
+                                       id="occasion_{{ occasion }}" value="{{ occasion }}"
+                                       {{ 'checked' if clothing and occasion in clothing.occasions_list }}>
+                                <label class="btn btn-outline-primary me-2 mb-2" 
+                                       for="occasion_{{ occasion }}">{{ occasion }}</label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                {{ '保存修改' if clothing else '添加衣物' }}
+                            </button>
+                            <a href="{{ url_for('wardrobe.index') }}" class="btn btn-outline-secondary">
+                                返回衣橱
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .description-examples {
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    
+    .example-tag {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .example-tag:hover {
+        background-color: #e9ecef !important;
+        transform: scale(1.05);
+    }
+    
+    .btn-check:checked + .btn-outline-primary {
+        background-color: #0d6efd !important;
+        color: white !important;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateCharCount(textarea) {
+    const maxLength = textarea.getAttribute('maxlength');
+    const currentLength = textarea.value.length;
+    document.getElementById('charCount').textContent = `${currentLength}/${maxLength}`;
+}
+
+function useExample(element) {
+    const description = document.getElementById('description');
+    description.value = element.textContent.trim();
+    updateCharCount(description);
+    description.focus();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化字数统计
+    const description = document.getElementById('description');
+    updateCharCount(description);
+    
+    // 表单验证
+    const form = document.getElementById('clothingForm');
+    form.addEventListener('submit', function(event) {
+        const description = document.getElementById('description').value.trim();
+        const seasons = document.querySelectorAll('input[name="seasons"]:checked');
+        const occasions = document.querySelectorAll('input[name="occasions"]:checked');
+
+        if (description.length < 5) {
+            event.preventDefault();
+            alert('请输入至少5个字符的详细描述');
+            return;
+        }
+
+        if (seasons.length === 0) {
+            event.preventDefault();
+            alert('请至少选择一个适用季节');
+            return;
+        }
+
+        if (occasions.length === 0) {
+            event.preventDefault();
+            alert('请至少选择一个适用场合');
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

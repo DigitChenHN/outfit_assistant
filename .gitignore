@@ -1,0 +1,5 @@
+__pycache__/
+*.db
+migrations/
+tests/
+config.py

@@ -1,0 +1,254 @@
+{% extends "base.html" %} {% block title %}AI穿搭助手 - 聊天{% endblock %} {% block styles %} {{ super() }}
+<style>
+    .chat-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+    }
+    
+    .chat-messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .message {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .message-user {
+        align-items: flex-end;
+    }
+    
+    .message-ai {
+        align-items: flex-start;
+    }
+    
+    .message-content {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 15px;
+        margin: 5px 0;
+    }
+    
+    .message-user .message-content {
+        background: #007bff;
+        color: white;
+        border-bottom-right-radius: 5px;
+    }
+    
+    .message-ai .message-content {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-bottom-left-radius: 5px;
+    }
+    
+    .message-time {
+        font-size: 0.8em;
+        color: #6c757d;
+        margin: 0 5px;
+    }
+    
+    .chat-input {
+        display: flex;
+        gap: 10px;
+        padding: 20px;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        position: sticky;
+        bottom: 20px;
+    }
+    
+    .chat-input textarea {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        resize: none;
+        height: 50px;
+    }
+    
+    .chat-input button {
+        padding: 10px 20px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .chat-input button:hover {
+        background: #0056b3;
+    }
+    
+    .chat-input button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 20px;
+        color: #6c757d;
+    }
+    
+    .loading.active {
+        display: block;
+    }
+    /* 响应式设计 */
+    
+    @media (max-width: 768px) {
+        .chat-container {
+            height: calc(100vh - 150px);
+            padding: 10px;
+        }
+        .message-content {
+            max-width: 85%;
+        }
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="chat-container">
+    <div class="chat-messages" id="chatMessages">
+        {% if chat_history %} {# 使用reverse过滤器反转列表顺序 #} {% for message in chat_history|reverse %}
+        <div class="message message-user">
+            <div class="message-content">{{ message.user_message }}</div>
+            <span class="message-time">{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+        <div class="message message-ai">
+            <div class="message-content">{{ message.ai_response }}</div>
+            <span class="message-time">{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+        {% endfor %} {% endif %}
+    </div>
+    <div class="loading" id="loading">
+        <span>AI正在思考中...</span>
+    </div>
+    <div class="chat-input">
+        <textarea id="messageInput" placeholder="请输入您的问题，例如：'今天去约会，穿什么比较合适？'"></textarea>
+        <button id="sendButton" onclick="window.sendMessage && sendMessage()">发送</button>
+    </div>
+</div>
+{% endblock %} {% block extra_js %} {{ super() }}
+<script>
+    function appendMessage(message, isUser = true) {
+        const chatMessages = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message message-${isUser ? 'user' : 'ai'}`;
+
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        content.textContent = message;
+
+        const time = document.createElement('span');
+        time.className = 'message-time';
+        time.textContent = formatTime(new Date());
+
+        messageDiv.appendChild(content);
+        messageDiv.appendChild(time);
+        chatMessages.appendChild(messageDiv);
+
+        // 滚动到底部
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // 将sendMessage函数挂载到window对象
+    window.sendMessage = sendMessage;
+    async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const loading = document.getElementById('loading');
+        const message = input.value.trim();
+
+        if (!message) {
+            alert('请输入消息内容');
+            return;
+        }
+
+        // 禁用输入和发送按钮
+        input.disabled = true;
+        sendButton.disabled = true;
+        loading.classList.add('active');
+
+        // 显示用户消息
+        appendMessage(message, true);
+        input.value = '';
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) throw new Error(data.error || '请求失败');
+
+            // 直接显示AI回复，不再显示"思考中..."
+            appendMessage(data.response, false);
+
+        } catch (error) {
+            appendMessage(`抱歉，处理请求时出错: ${error.message}`, false);
+            console.error('Error:', error);
+        } finally {
+            // 重新启用输入和发送按钮
+            input.disabled = false;
+            sendButton.disabled = false;
+            loading.classList.remove('active');
+            input.focus();
+        }
+    }
+
+    function formatTime(date) {
+        return new Date(date).toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+
+    // 所有DOM元素加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // console.log('Chat page loaded - DOMContentLoaded triggered');
+        // console.log('SendMessage function exists:', typeof window.sendMessage === 'function');
+
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) {
+            console.log('Found chatMessages element');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        } else {
+            console.error('chatMessages element not found');
+        }
+
+        const input = document.getElementById('messageInput');
+        input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                if (window.sendMessage) {
+                    sendMessage();
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

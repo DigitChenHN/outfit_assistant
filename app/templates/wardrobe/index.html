@@ -1,0 +1,115 @@
+ {% extends "base.html" %} {% block title %}我的衣橱 - AI穿搭助手{% endblock %} {% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>我的衣橱</h2>
+        <a href="{{ url_for('wardrobe.add') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 添加衣物
+        </a>
+    </div>
+
+    <!-- 分类筛选 -->
+    <div class="mb-4">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('wardrobe.index') }}" class="btn btn-outline-primary {{ 'active' if not current_category }}">
+                全部
+            </a> {% for key, name in categories.items() %}
+            <a href="{{ url_for('wardrobe.index', category=key) }}" class="btn btn-outline-primary {{ 'active' if current_category == key }}">
+                {{ name }}
+            </a> {% endfor %}
+        </div>
+    </div>
+
+    <!-- 衣物列表 -->
+    <div class="row g-4">
+        {% for clothing in clothes %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ clothing.description }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        {{ categories[clothing.category] }}
+                    </h6>
+
+                    <div class="mb-3">
+                        <span class="fw-bold">适用季节:</span> {% for season in clothing.seasons_list %}
+                        <span class="badge bg-success">{{ season }}</span> {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="fw-bold">适用场合:</span> {% for occasion in clothing.occasions_list %}
+                        <span class="badge bg-info">{{ occasion }}</span> {% endfor %}
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <a href="{{ url_for('wardrobe.edit', id=clothing.id) }}" class="btn btn-sm btn-outline-primary me-2">
+                            编辑
+                        </a>
+                        <button class="btn btn-sm btn-outline-danger delete-clothing" data-id="{{ clothing.id }}">
+                            删除
+                        </button>
+                    </div>
+                </div>
+                <div class="card-footer text-muted small">
+                    添加于 {{ clothing.created_at.strftime('%Y-%m-%d') }}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info" role="alert">
+                还没有添加任何衣物。点击右上角的"添加衣物"按钮开始添加吧！
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} {% block styles %} {{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+    .card-title {
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .card-subtitle {
+        font-size: 0.9rem;
+    }
+    
+    .badge {
+        margin-right: 0.3rem;
+        margin-bottom: 0.3rem;
+    }
+</style>
+{% endblock %} {% block extra_js %} {{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 删除衣物的处理
+        document.querySelectorAll('.delete-clothing').forEach(button => {
+            button.addEventListener('click', function() {
+                if (confirm('确定要删除这件衣物吗？')) {
+                    const id = this.dataset.id;
+                    fetch(`/wardrobe/${id}/delete`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // 删除成功，刷新页面
+                                location.reload();
+                            } else {
+                                alert(data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('删除失败，请重试');
+                        });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

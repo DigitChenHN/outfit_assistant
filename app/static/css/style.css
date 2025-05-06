@@ -1,0 +1,140 @@
+/* 全局样式 */
+body {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* 导航栏样式 */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+/* 卡片样式 */
+.card {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: none;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+/* 表单样式 */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+/* 按钮样式 */
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}
+
+/* 提示消息样式 */
+.alert {
+    margin-bottom: 1rem;
+    border: none;
+    border-radius: 0.25rem;
+}
+
+/* 衣物卡片样式 */
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+}
+
+/* 标签样式 */
+.badge {
+    margin-right: 0.3rem;
+    margin-bottom: 0.3rem;
+    padding: 0.5em 0.8em;
+}
+
+.badge.bg-primary {
+    background-color: #007bff !important;
+}
+
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-info {
+    background-color: #17a2b8 !important;
+    color: white;
+}
+
+/* 按钮组样式 */
+.btn-group .btn {
+    margin-right: 0.25rem;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+/* 表单样式增强 */
+.form-select:focus,
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* 多选按钮组样式 */
+.btn-check:checked + .btn-outline-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .btn-group {
+        flex-wrap: wrap;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* 删除按钮悬停效果 */
+.delete-clothing:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* 卡片内容布局 */
+.card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-body .badge-container {
+    margin-top: auto;
+    padding-top: 1rem;
+}
+
+/* 添加按钮样式 */
+.btn-primary {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.btn-primary i {
+    margin-right: 0.5rem;
+}
