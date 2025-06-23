@@ -30,7 +30,7 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
 
     # 初始化蓝图
-    from .routes import auth_bp, main_bp, wardrobe_bp, weather_bp, chat_bp, api_keys_bp, main_bp
+    from .routes import auth_bp, main_bp, wardrobe_bp, weather_bp, chat_bp, api_keys_bp
     # 注册主路由模块
     app.register_blueprint(main_bp)
     

@@ -15,9 +15,4 @@ __all__ = ['auth_bp', 'wardrobe_bp', 'weather_bp', 'chat_bp', 'api_keys_bp', 'ma
 
 @main_bp.route('/')
 def index():
-    return render_template('index.html')
-
-def init_app(app):
-    """初始化所有路由"""
-    # 注册主蓝图
-    
+    return render_template('index.html')    
