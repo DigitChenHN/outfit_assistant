@@ -51,6 +51,17 @@
                             {% endif %}
                         </div>
 
+                        <!-- API Base (硅基) -->
+                        <div class="mb-3" id="apiBaseField">
+                            {{ form.api_base.label(class="form-label") }} {{ form.api_base(class="form-control", autocomplete="off") }}
+                            <div class="form-text">{{ form.api_base.description }}</div>
+                            {% if form.api_base.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.api_base.errors %} {{ error }} {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
                         <!-- 提交按钮 -->
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">保存配置</button> {% if config and config.is_valid %}
@@ -74,12 +85,12 @@
                         <h2 class="accordion-header">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{ model_key }}">
                                     {{ info.name }} 配置说明
-                                </button>
+                            </button>
                         </h2>
                         <div id="collapse_{{ model_key }}" class="accordion-collapse collapse" data-bs-parent="#apiGuideAccordion">
                             <div class="accordion-body">
                                 <h6>必需信息：</h6>
-                                <ul></ul>
+                                <ul>
                                 {% for field in info.requires %}
                                 <li>{{ field }}</li>
                                 {% endfor %}
@@ -94,60 +105,120 @@
                                     <li>创建应用获取API Key和Secret Key</li>
                                 </ol>
                                 {% elif model_key == 'xunfei' %}
-                                <ol></ol>
-                                <li>访问 <a href="https://www.xfyun.cn/services/spark" target="_blank">讯飞开放平台</a></li>
-                                <li>注册/登录账号</li>
-                                <li>创建新应用</li>
-                                <li>获取APPID和API Key</li>
+                                <ol>
+                                    <li>访问 <a href="https://console.xfyun.cn/services/sparkapiCenter" target="_blank">讯飞开放平台</a></li>
+                                    <li>注册/登录账号</li>
+                                    <li>创建新应用</li>
+                                    <li>获取API Password和API Key</li>
+                                </ol>
+                                {% elif model_key == 'silicon' %}
+                                <ol>
+                                    <li>访问 <a href="https://www.siliconflow.cn" target="_blank">硅基流动官网</a></li>
+                                    <li>注册/登录账号</li>
+                                    <li>申请API Key</li>
+                                    <li>如需自定义API地址，填写API Base URL</li>
                                 </ol>
                                 {% endif %}
 
                                 <p class="mt-3">
                                     <a href="{{ info.help_url }}" target="_blank" class="btn btn-sm btn-outline-info">
                                             查看详细文档
-                                        </a>
+                                    </a>
                                 </p>
                             </div>
                         </div>
-                    </div>
-                    {% endfor %}
+                        {% endfor %}
+                    </div>     
                 </div>
             </div>
         </div>
     </div>
 </div>
 </div>
-{% endblock %} {% block scripts %} {{ super() }}
+{% endblock %} {% block extra_js %} {{ super() }}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('DOM loaded, initializing form fields...');
+        
         const modelType = document.getElementById('model_type');
         const secretKeyField = document.getElementById('secretKeyField');
         const appIdField = document.getElementById('appIdField');
+        const apiBaseField = document.getElementById('apiBaseField');
 
-        function updateFields() {
+        // 获取用户已保存的LLM配置
+        let savedConfigs = [];
+        try {
+            const response = await fetch('/api_keys/llm-configs');
+            const result = await response.json();
+            if (result.success) {
+                savedConfigs = result.data;
+                console.log('Loaded saved configs:', savedConfigs);
+            }
+        } catch (error) {
+            console.error('Failed to fetch LLM configs:', error);
+        }
+
+        function updateFields(initialLoad = false) {
+            if (!modelType || !secretKeyField || !appIdField || !apiBaseField) {
+                console.error('Required elements not found!');
+                return;
+            }
+
             const selectedModel = modelType.value;
+            console.log('Selected model:', selectedModel);
 
+            // 查找当前选择的model_type对应的配置
+            const currentConfig = savedConfigs.find(config => config.model_type === selectedModel);
+            
+            // 重置所有字段值
+            document.getElementById('api_key').value = currentConfig?.api_key || '';
+            document.getElementById('api_secret').value = currentConfig?.api_secret || '';
+            document.getElementById('app_id').value = currentConfig?.app_id || '';
+            document.getElementById('api_base').value = currentConfig?.api_base || '';
+            
             // 显示/隐藏相关字段
             if (selectedModel === 'baidu') {
                 secretKeyField.style.display = 'block';
                 appIdField.style.display = 'none';
+                apiBaseField.style.display = 'none';
             } else if (selectedModel === 'xunfei') {
                 secretKeyField.style.display = 'none';
                 appIdField.style.display = 'block';
+                apiBaseField.style.display = 'none';
+            } else if (selectedModel === 'silicon') {
+                secretKeyField.style.display = 'none';
+                appIdField.style.display = 'none';
+                apiBaseField.style.display = 'block';
             }
 
             // 展开对应的配置指南
-            document.querySelectorAll('.accordion-collapse').forEach(item => {
+            const accordions = document.querySelectorAll('.accordion-collapse');
+            console.log('Found accordions:', accordions.length);
+            
+            accordions.forEach(item => {
                 item.classList.remove('show');
             });
-            document.querySelector(`#collapse_${selectedModel}`).classList.add('show');
+            
+            const targetAccordion = document.querySelector(`#collapse_${selectedModel}`);
+            if (targetAccordion) {
+                console.log('Expanding accordion for:', selectedModel);
+                targetAccordion.classList.add('show');
+            } else {
+                console.error('Accordion not found for:', selectedModel);
+            }
         }
 
         // 初始状态
-        updateFields();
+        console.log('Setting initial fields state...');
+        updateFields(true);
 
         // 监听变化
-        modelType.addEventListener('change', updateFields);
+        if (modelType) {
+            console.log('Adding change listener to model type selector');
+            modelType.addEventListener('change', updateFields);
+        } else {
+            console.error('Model type selector not found!');
+        }
     });
 
     function testAPI() {

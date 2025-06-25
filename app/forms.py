@@ -21,6 +21,10 @@ class APIKeyForm(FlaskForm):
     app_id = StringField('APIPassword',
                       validators=[Optional()],
                       description='讯飞星火需要填写此项')
+                      
+    api_base = StringField('API Base URL',
+                       validators=[Optional()],
+                       description='硅基流动专用(可选)')
 
 class LoginForm(FlaskForm):
     """登录表单"""

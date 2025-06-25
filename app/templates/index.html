@@ -63,7 +63,7 @@
                         <div class="card-body">
                             <h5 class="card-title">API设置</h5>
                             <p class="card-text">设置智能穿搭助手模型api。</p>
-                            <a href="{{ url_for('api_keys.manage') }}" class="btn btn-primary">设置api</a>
+                            <a href="{{ url_for('api_keys.manage') }}" class="btn btn-primary">设置api</a> <!--这里的jinja语法指向的是蓝图注册的路由，即routes/api_keys下的manage函数-->
                         </div>
                     </div>
                 </div>

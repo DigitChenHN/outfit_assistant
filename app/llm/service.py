@@ -17,10 +17,24 @@ class LLMService:
         self.user_id = None
         self.config = None
 
-    def set_user_id(self, user_id):
-        """设置用户ID并加载配置"""
+    def set_user_id(self, user_id, config_id=None):
+        """设置用户ID并加载配置
+        Args:
+            user_id: 用户ID
+            config_id: 可选，指定使用的配置ID。如果未提供，使用用户第一个有效配置
+        """
         self.user_id = user_id
-        self.config = UserLLMConfig.query.filter_by(user_id=user_id).first()
+        if config_id:
+            self.config = UserLLMConfig.query.filter_by(
+                id=config_id,
+                user_id=user_id,
+                is_active=True
+            ).first()
+        else:
+            self.config = UserLLMConfig.query.filter_by(
+                user_id=user_id,
+                is_active=True
+            ).first()
 
     def _format_wardrobe_info(self, clothing_items):
         """格式化衣橱信息"""
@@ -120,14 +134,15 @@ class LLMService:
                 "messages": [
                     {
                         "role": "system",
-                        "content": """
-# role 
-你是一个精通穿搭的时尚专家，熟悉各种风格的衣物搭配方法和技巧。对于配色、款式等搭配都有一套成熟的方法。
-# situation
-你面对的是不太了解穿搭的人群，他们只有最基本的审美，对于颜色应该如何搭配、款式应该如何选择，只有感觉上的判断，无法作出理论上的分析。而你懂得颜色和款式搭配的基本原理，知道哪些搭配是视觉上舒适的、符合大众审美的，哪些搭配是不应该采取的。
-# task
-你能够综合用户给出的天气、地理位置、衣橱中的衣物以及用户的自定义的要求，给出符合需求的穿搭建议  
-                        """
+                        "content": (
+                            "# role\n"
+                            "你是一个精通穿搭的时尚专家，熟悉各种风格的衣物搭配方法和技巧。对于配色、款式等搭配都有一套成熟的方法。\n"
+                            "# situation\n"
+                            "你面对的是不太了解穿搭的人群，他们只有最基本的审美，对于颜色应该如何搭配、款式应该如何选择，只有感觉上的判断，无法作出理论上的分析。而你懂得颜色和款式搭配的基本原理，知道哪些搭配是视觉上舒适的、符合大众审美的，哪些搭配是不应该采取的。\n"
+                            "# task\n"
+                            "你能够综合用户给出的天气、地理位置、衣橱中的衣物以及用户的自定义的要求，给出符合需求的建议，包括但不限于为用户提供穿搭建议，购买建议，以及其他任何相关的知识或者建议。"
+                            "\n"
+                        )
                     },
                     {
                         "role": "user",
@@ -148,6 +163,53 @@ class LLMService:
             return f"http请求错误, {response.status_code}"
         except Exception as e:
             current_app.logger.error(f"Error calling Xunfei API: {str(e)}")
+            return "调用AI服务时发生错误"
+
+    def _call_silicon_api(self, prompt):
+        """调用硅基流动API"""
+        if not self.config or not self.config.api_key:
+            return "请先完成API配置（需要API Key）"
+            
+        api_url = self.config.api_base if self.config.api_base else "https://api.siliconflow.cn/v1/chat/completions"
+        
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.config.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            data = {
+                "model": "Qwen/Qwen3-8B",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "# role\n"
+                            "你是一个精通穿搭的时尚专家，熟悉各种风格的衣物搭配方法和技巧。对于配色、款式等搭配都有一套成熟的方法。\n"
+                            "# situation\n"
+                            "你面对的是不太了解穿搭的人群，他们只有最基本的审美，对于颜色应该如何搭配、款式应该如何选择，只有感觉上的判断，无法作出理论上的分析。而你懂得颜色和款式搭配的基本原理，知道哪些搭配是视觉上舒适的、符合大众审美的，哪些搭配是不应该采取的。\n"
+                            "# task\n"
+                            "你能够综合用户给出的天气、地理位置、衣橱中的衣物以及用户的自定义的要求，给出符合需求的建议，包括但不限于为用户提供穿搭建议，购买建议，以及其他任何相关的知识或者建议。"
+                            "\n"
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "temperature": 0.7,
+                "max_tokens": 2000
+            }
+            
+            response = requests.post(api_url, headers=headers, json=data)
+            if response.status_code == 200:
+                data = response.json()
+                return data['choices'][0]['message']['content']
+            current_app.logger.error(f"Silicon API error: {response.text}")
+            return f"AI服务请求失败，状态码：{response.status_code}"
+        except Exception as e:
+            current_app.logger.error(f"Error calling Silicon API: {str(e)}")
             return "调用AI服务时发生错误"
 
     def chat(self, prompt):
@@ -182,8 +244,8 @@ class LLMService:
         full_prompt = (
             f"当前地点：{location_info}\n"
             f"当前天气：{weather_info}\n\n"
-            f"用户衣橱中的衣物：\n{wardrobe_info}\n\n"
-            f"用户需求：{prompt}\n\n"
+            f"衣橱中的衣物：\n{wardrobe_info}\n\n"
+            f"{prompt}\n\n"
         )
         
         # 根据配置的模型类型调用相应的API
@@ -191,5 +253,7 @@ class LLMService:
             return self._call_baidu_api(full_prompt)
         elif self.config.model_type == 'xunfei':
             return self._call_xunfei_api(full_prompt)
+        elif self.config.model_type == 'silicon':
+            return self._call_silicon_api(full_prompt)
         else:
             return "不支持的AI服务类型"

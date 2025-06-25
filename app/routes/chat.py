@@ -22,16 +22,21 @@ def index():
 @login_required
 def chat():
     current_app.logger.info(f"Received chat request from user {current_user.id}")  # 添加日志
-    """处理聊天请求"""
+    """处理聊天请求
+    参数:
+    - message: 必需，用户消息内容
+    - config_id: 可选，指定使用的LLM配置ID
+    """
     data = request.get_json()
     if not data or 'message' not in data:
         return jsonify({'error': '无效的请求数据'}), 400
         
     user_message = data['message']
+    config_id = data.get('config_id')
     
     # 创建LLM服务实例
     llm_service = LLMService()
-    llm_service.set_user_id(current_user.id)
+    llm_service.set_user_id(current_user.id, config_id)
     
     try:
         # 验证LLM服务配置

@@ -69,6 +69,19 @@
         bottom: 20px;
     }
     
+    .ai-selector select {
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        background: white;
+        min-width: 150px;
+    }
+    
+    .ai-selector select:focus {
+        outline: none;
+        border-color: #007bff;
+    }
+    
     .chat-input textarea {
         flex-grow: 1;
         padding: 10px;
@@ -137,6 +150,11 @@
         <span>AI正在思考中...</span>
     </div>
     <div class="chat-input">
+        <div class="ai-selector">
+            <select id="aiProviderSelect">
+                <!-- <option value="">未配置ai服务商api</option>  -->
+            </select>
+        </div>
         <textarea id="messageInput" placeholder="请输入您的问题，例如：'今天去约会，穿什么比较合适？'"></textarea>
         <button id="sendButton" onclick="window.sendMessage && sendMessage()">发送</button>
     </div>
@@ -187,13 +205,15 @@
         input.value = '';
 
         try {
+            const configId = document.getElementById('aiProviderSelect').value;
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    message: message
+                    message: message,
+                    config_id: configId || undefined
                 })
             });
 
@@ -227,18 +247,52 @@
     }
 
 
+    async function loadAIConfigs() {
+        const select = document.getElementById('aiProviderSelect');
+        try {
+            const response = await fetch('/api_keys/llm-configs', {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            if (!result.success || !Array.isArray(result.data)) {
+                throw new Error('Invalid API response format');
+            }
+                        
+            // 添加从API获取的配置
+            result.data.forEach(config => {
+                if (config.is_active) {
+                    const option = document.createElement('option');
+                    option.value = config.id;
+                    option.textContent = config.model_type_display || config.model_type;
+                    select.appendChild(option);
+                }
+            });
+            
+            console.log('Loaded AI configs:', result.data);
+            
+        } catch (error) {
+            console.error('Error loading AI configs:', error);
+            // 显示错误信息给用户
+            select.innerHTML = '<option value="">未配置ai服务商api</option>';
+        }
+    }
+
     // 所有DOM元素加载完成后执行
     document.addEventListener('DOMContentLoaded', function() {
-        // console.log('Chat page loaded - DOMContentLoaded triggered');
-        // console.log('SendMessage function exists:', typeof window.sendMessage === 'function');
-
         const chatMessages = document.getElementById('chatMessages');
         if (chatMessages) {
-            console.log('Found chatMessages element');
             chatMessages.scrollTop = chatMessages.scrollHeight;
-        } else {
-            console.error('chatMessages element not found');
         }
+
+        // 加载AI配置
+        loadAIConfigs();
 
         const input = document.getElementById('messageInput');
         input.addEventListener('keydown', function(event) {

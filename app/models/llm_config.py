@@ -10,7 +10,9 @@ class UserLLMConfig(db.Model):
     api_key = db.Column(db.String(200), nullable=False)
     api_secret = db.Column(db.String(200))  # 百度需要
     app_id = db.Column(db.String(200))      # 讯飞需要
+    api_base = db.Column(db.String(200))    # 硅基流动可选
     is_active = db.Column(db.Boolean, default=True)
+    is_default = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
@@ -26,6 +28,8 @@ class UserLLMConfig(db.Model):
             return bool(self.api_secret)
         elif self.model_type == 'xunfei':
             return bool(self.app_id)
+        elif self.model_type == 'silicon':
+            return True  # 只需要api_key
         return False
 
     @staticmethod
@@ -43,6 +47,12 @@ class UserLLMConfig(db.Model):
                 'requires': ['api_key', 'app_id'],
                 'optional': [],
                 'help_url': 'https://www.xfyun.cn/doc/spark/Web.html'
+            },
+            'silicon': {
+                'name': '硅基流动',
+                'requires': ['api_key'],
+                'optional': ['api_base'],
+                'help_url': 'https://www.siliconflow.cn/docs'
             }
         }
 
@@ -54,12 +64,15 @@ class UserLLMConfig(db.Model):
             'api_key': self.api_key,
             'api_secret': self.api_secret if self.model_type == 'baidu' else None,
             'app_id': self.app_id if self.model_type == 'xunfei' else None,
+            'api_base': self.api_base if self.model_type == 'silicon' else None,
             'is_active': self.is_active,
+            'is_default': self.is_default,
             'created_at': self.created_at.isoformat()
         }
 
 # 支持的模型类型
 SUPPORTED_MODELS = {
     'baidu': '百度文心一言',
-    'xunfei': '讯飞星火'
+    'xunfei': '讯飞星火',
+    'silicon': '硅基流动'
 }
