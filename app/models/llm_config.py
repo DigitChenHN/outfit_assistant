@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from app import db
 
@@ -6,7 +5,7 @@ class UserLLMConfig(db.Model):
     """用户LLM配置模型"""
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    model_type = db.Column(db.String(20), nullable=False)  # baidu/xunfei
+    model_type = db.Column(db.String(20), nullable=False)  # baidu/xunfei/silicon/openrouter
     api_key = db.Column(db.String(200), nullable=False)
     api_secret = db.Column(db.String(200))  # 百度需要
     app_id = db.Column(db.String(200))      # 讯飞需要
@@ -29,6 +28,8 @@ class UserLLMConfig(db.Model):
         elif self.model_type == 'xunfei':
             return bool(self.app_id)
         elif self.model_type == 'silicon':
+            return True  # 只需要api_key
+        elif self.model_type == 'openrouter':
             return True  # 只需要api_key
         return False
 
@@ -53,6 +54,12 @@ class UserLLMConfig(db.Model):
                 'requires': ['api_key'],
                 'optional': ['api_base'],
                 'help_url': 'https://www.siliconflow.cn/docs'
+            },
+            'openrouter': {
+                'name': 'OpenRouter',
+                'requires': ['api_key'],
+                'optional': [],
+                'help_url': 'https://openrouter.ai/docs'
             }
         }
 
@@ -74,5 +81,6 @@ class UserLLMConfig(db.Model):
 SUPPORTED_MODELS = {
     'baidu': '百度文心一言',
     'xunfei': '讯飞星火',
-    'silicon': '硅基流动'
+    'silicon': '硅基流动',
+    'openrouter': 'OpenRouter'
 }

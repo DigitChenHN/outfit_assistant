@@ -9,6 +9,8 @@ class Clothing(db.Model):
     description = db.Column(db.String(200), nullable=False)  # 详细描述，如"深海蓝修身羊毛呢大衣"
     seasons = db.Column(db.String(50))                   # 适用季节，存储为JSON数组
     occasions = db.Column(db.String(100))                # 适用场合，存储为JSON数组
+    image_data = db.Column(db.LargeBinary)               # 衣物图片数据
+    image_mimetype = db.Column(db.String(50))            # 图片MIME类型
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __init__(self, **kwargs):
@@ -22,13 +24,12 @@ class Clothing(db.Model):
     @property
     def seasons_list(self):
         """获取季节列表"""
-        return json.loads(self.seasons) if self.seasons else []
-
+        return json.loads(self.seasons) if self.seasons else []    
     @property
     def occasions_list(self):
         """获取场合列表"""
         return json.loads(self.occasions) if self.occasions else []
-
+        
     def to_dict(self):
         """转换为字典格式"""
         return {
@@ -37,6 +38,7 @@ class Clothing(db.Model):
             'description': self.description,
             'seasons': self.seasons_list,
             'occasions': self.occasions_list,
+            'has_image': self.image_data is not None,
             'created_at': self.created_at.isoformat()
         }
 

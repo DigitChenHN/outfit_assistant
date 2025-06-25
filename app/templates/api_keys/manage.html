@@ -110,13 +110,20 @@
                                     <li>注册/登录账号</li>
                                     <li>创建新应用</li>
                                     <li>获取API Password和API Key</li>
-                                </ol>
+                                </ol>                               
                                 {% elif model_key == 'silicon' %}
                                 <ol>
                                     <li>访问 <a href="https://www.siliconflow.cn" target="_blank">硅基流动官网</a></li>
                                     <li>注册/登录账号</li>
                                     <li>申请API Key</li>
                                     <li>如需自定义API地址，填写API Base URL</li>
+                                </ol>
+                                {% elif model_key == 'openrouter' %}
+                                <ol>
+                                    <li>访问 <a href="https://openrouter.ai/keys" target="_blank">OpenRouter</a></li>
+                                    <li>注册/登录账号</li>
+                                    <li>创建API Key</li>
+                                    <li>复制API Key到此处</li>
                                 </ol>
                                 {% endif %}
 
@@ -184,11 +191,15 @@
             } else if (selectedModel === 'xunfei') {
                 secretKeyField.style.display = 'none';
                 appIdField.style.display = 'block';
-                apiBaseField.style.display = 'none';
+                apiBaseField.style.display = 'none';            
             } else if (selectedModel === 'silicon') {
                 secretKeyField.style.display = 'none';
                 appIdField.style.display = 'none';
                 apiBaseField.style.display = 'block';
+            } else if (selectedModel === 'openrouter') {
+                secretKeyField.style.display = 'none';
+                appIdField.style.display = 'none';
+                apiBaseField.style.display = 'none';
             }
 
             // 展开对应的配置指南

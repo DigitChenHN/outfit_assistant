@@ -44,7 +44,6 @@ def manage():
             
             # 更新基本配置
             config.api_key = form.api_key.data.strip()
-            
             # 根据模型类型更新特定字段
             if model_type == 'baidu':
                 if not form.api_secret.data:
@@ -71,6 +70,11 @@ def manage():
                 config.api_base = form.api_base.data.strip() if form.api_base.data else None
                 config.api_secret = None
                 config.app_id = None
+                
+            elif model_type == 'openrouter':
+                config.api_secret = None
+                config.app_id = None
+                config.api_base = None
             
             db.session.commit()
             flash(f'{model_type} API配置已保存', 'success')
@@ -143,5 +147,5 @@ def get_llm_configs():
         'data': [config.to_dict() for config in configs]
     })
 
-def init_app(app):
-    app.register_blueprint(bp)
+# def init_app(app):
+#     app.register_blueprint(bp)

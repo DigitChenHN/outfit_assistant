@@ -13,6 +13,19 @@ login_manager.login_view = 'auth.login'  # 设置登录视图的端点
 login_manager.login_message = '请先登录以访问此页面'  # 自定义消息
 
 def create_app(config_class=Config):
+    """
+    Creates and configures the Flask application instance.
+    
+    Args:
+        config_class: Configuration class to use for the app (defaults to Config).
+    
+    Returns:
+        Flask: The configured application instance.
+    
+    Initializes Flask extensions (db, migrate, login_manager) and registers blueprints 
+    for different route modules. Also sets response headers to disable caching and 
+    creates database tables within the application context.
+    """
     app = Flask(__name__)
     app.config.from_object(config_class)
 
