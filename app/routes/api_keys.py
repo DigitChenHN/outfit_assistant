@@ -1,4 +1,3 @@
-
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app import db
@@ -14,8 +13,7 @@ def manage():
     """管理API密钥"""
     # 获取用户所有配置
     configs = UserLLMConfig.query.filter_by(
-        user_id=current_user.id,
-        is_active=True
+        user_id=current_user.id
     ).all()
     
     # 将配置按model_type组织为字典
@@ -44,6 +42,17 @@ def manage():
             
             # 更新基本配置
             config.api_key = form.api_key.data.strip()
+            config.is_active = form.is_active.data
+            
+            # 如果设置为默认，需要取消其他配置的默认状态
+            if form.is_default.data:
+                for c in configs:
+                    if c.id != config.id and c.is_default:
+                        c.is_default = False
+                config.is_default = True
+            else:
+                config.is_default = False
+            
             # 根据模型类型更新特定字段
             if model_type == 'baidu':
                 if not form.api_secret.data:
@@ -138,8 +147,7 @@ def test_api():
 def get_llm_configs():
     """获取用户所有的LLM配置"""
     configs = UserLLMConfig.query.filter_by(
-        user_id=current_user.id,
-        is_active=True
+        user_id=current_user.id
     ).all()
     
     return jsonify({

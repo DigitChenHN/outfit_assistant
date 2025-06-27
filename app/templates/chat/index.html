@@ -17,6 +17,7 @@
         flex-direction: column;
         height: 100vh;
         overflow-y: auto;
+        transition: all 0.3s ease;
     }
     
     .sidebar-header {
@@ -70,7 +71,7 @@
         flex-grow: 1;
         display: flex;
         flex-direction: column;
-        padding: 20px;
+        padding: 5px;
         height: 100vh;
         position: relative;
     }
@@ -99,7 +100,7 @@
     }
     
     .message-content {
-        max-width: 70%;
+        max-width: 95%;
         padding: 10px 15px;
         border-radius: 15px;
         margin: 5px 0;
@@ -118,7 +119,7 @@
     }
     
     .message-ai .markdown-content {
-        max-width: 70%;
+        max-width: 95%;
         padding: 10px 15px;
         border-radius: 15px;
         margin: 5px 0;
@@ -175,23 +176,51 @@
         margin: 0 5px;
     }
     
+    /* 新的聊天输入框样式 */
+    .chat-input-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        position: sticky;
+        bottom: 20px;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    }
+    
     .chat-input {
         display: flex;
-        gap: 10px;
-        padding: 20px;
+        width: 100%;
         background: white;
         border: 1px solid #dee2e6;
         border-radius: 10px;
-        position: sticky;
-        bottom: 20px;
+        overflow: hidden;
+    }
+    
+    .chat-input textarea {
+        flex-grow: 1;
+        padding: 15px;
+        border: none;
+        resize: none;
+        min-height: 60px;
+        outline: none;
+        font-size: 1rem;
+    }
+    
+    .chat-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
     }
     
     .ai-selector select {
-        padding: 10px;
+        padding: 8px 12px;
         border: 1px solid #dee2e6;
         border-radius: 5px;
         background: white;
-        min-width: 150px;
+        font-size: 0.9rem;
     }
     
     .ai-selector select:focus {
@@ -199,30 +228,22 @@
         border-color: #007bff;
     }
     
-    .chat-input textarea {
-        flex-grow: 1;
-        padding: 10px;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
-        resize: none;
-        height: 50px;
-    }
-    
-    .chat-input button {
-        padding: 10px 20px;
+    .send-button {
         background: #007bff;
         color: white;
         border: none;
         border-radius: 5px;
+        padding: 8px 16px;
         cursor: pointer;
         transition: background-color 0.2s;
+        font-size: 0.9rem;
     }
     
-    .chat-input button:hover {
+    .send-button:hover {
         background: #0056b3;
     }
     
-    .chat-input button:disabled {
+    .send-button:disabled {
         background: #6c757d;
         cursor: not-allowed;
     }
@@ -246,6 +267,25 @@
         border-radius: 4px;
     }
     
+    /* 移动端侧边栏切换按钮 */
+    .sidebar-toggle {
+        display: none;
+        position: fixed;
+        top: 70px;  /* 将按钮位置向下调整 */
+        left: 15px;
+        z-index: 1000;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        text-align: center;
+        line-height: 40px;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    
     /* 响应式设计 */
     @media (max-width: 768px) {
         .chat-wrapper {
@@ -254,32 +294,72 @@
         
         .sidebar {
             width: 100%;
-            height: auto;
-            max-height: 200px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            height: 100vh;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar.active {
+            transform: translateX(0);
+        }
+        
+        .sidebar-toggle {
+            display: block;
         }
         
         .chat-container {
-            height: calc(100vh - 200px);
+            margin-top: 0;
+            height: 100vh;
+            width: 100%;
+            padding-top: 10px; /* 减小顶部内边距，因为按钮已经下移 */
         }
         
         .message-content, .markdown-content {
-            max-width: 85%;
+            max-width: 90%;
+        }
+        
+        .chat-input-container {
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .chat-input {
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chat-input textarea {
+            min-height: 60px;
+            padding: 16px;
+        }
+        
+        .chat-controls {
+            padding: 0 10px;
+        }
+        
+        .send-button {
+            padding: 8px 16px;
+            border-radius: 18px;
         }
     }
 </style>
 {% endblock %} {% block content %}
 <div class="chat-wrapper">
     <!-- 侧边栏：对话列表 -->
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <button class="btn btn-sm btn-primary" id="newConversationBtn">
-                <i class="bi bi-plus-lg"></i>
+                <i class="bi bi-plus-lg"></i> 新建对话
             </button>
         </div>
         <div class="conversation-list" id="conversationList">
             {% if conversations %}
             {% for conv in conversations %}
-            <div class="conversation-item {% if current_conversation.id == conv.id %}active{% endif %}" data-id="{{ conv.id }}">·
+            <div class="conversation-item {% if current_conversation.id == conv.id %}active{% endif %}" data-id="{{ conv.id }}">
                 <span class="conversation-title">{{ conv.title }}</span>
                 <div class="conversation-actions">
                     <button class="btn btn-sm btn-link rename-conversation" data-id="{{ conv.id }}" title="重命名">
@@ -298,6 +378,11 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- 移动端侧边栏切换按钮 -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="bi bi-list"></i>
+    </button>
 
     <!-- 主聊天区域 -->
     <div class="chat-container">
@@ -321,14 +406,20 @@
             <span>AI正在思考中...</span>
         </div>
         
-        <div class="chat-input">
-            <div class="ai-selector">
-                <select id="aiProviderSelect">
-                    <!-- 动态加载AI提供商 -->
-                </select>
+        <div class="chat-input-container">
+            <div class="chat-input">
+                <textarea id="messageInput" placeholder="请输入您的问题，例如：'今天去约会，穿什么比较合适？'"></textarea>
             </div>
-            <textarea id="messageInput" placeholder="请输入您的问题，例如：'今天去约会，穿什么比较合适？'"></textarea>
-            <button id="sendButton">发送</button>
+            <div class="chat-controls">
+                <div class="ai-selector">
+                    <select id="aiProviderSelect">
+                        <!-- 动态加载AI提供商 -->
+                    </select>
+                </div>
+                <button class="send-button" id="sendButton">
+                    <i class="bi bi-send"></i> 发送
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -519,10 +610,30 @@
             
             // 清空现有选项
             select.innerHTML = '';
-                        
-            // 添加从API获取的配置
-            result.data.forEach(config => {
-                if (config.is_active) {
+            
+            // 筛选出启用的配置
+            const activeConfigs = result.data.filter(config => config.is_active);
+            
+            if (activeConfigs.length === 0) {
+                select.innerHTML = '<option value="">未配置AI服务商</option>';
+                return;
+            }
+            
+            // 找出默认配置
+            const defaultConfig = activeConfigs.find(config => config.is_default);
+            
+            // 首先添加默认配置（如果有）
+            if (defaultConfig) {
+                const option = document.createElement('option');
+                option.value = defaultConfig.id;
+                option.textContent = defaultConfig.model_type_display || defaultConfig.model_type;
+                option.selected = true;
+                select.appendChild(option);
+            }
+            
+            // 添加其余配置
+            activeConfigs.forEach(config => {
+                if (!defaultConfig || config.id !== defaultConfig.id) {
                     const option = document.createElement('option');
                     option.value = config.id;
                     option.textContent = config.model_type_display || config.model_type;
@@ -862,6 +973,23 @@
                 }
             });
         });
+        
+        // 移动端侧边栏切换
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+            
+            // 点击聊天区域关闭侧边栏
+            document.querySelector('.chat-container').addEventListener('click', function() {
+                if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                }
+            });
+        }
     });
 </script>
 {% endblock %}

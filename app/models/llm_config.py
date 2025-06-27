@@ -65,9 +65,14 @@ class UserLLMConfig(db.Model):
 
     def to_dict(self):
         """转换为字典格式"""
+        model_name = SUPPORTED_MODELS.get(self.model_type, self.model_type)
+        # 如果是默认配置，在名称后标注
+        model_type_display = f"{model_name}{' (默认)' if self.is_default else ''}"
+        
         return {
             'id': self.id,
             'model_type': self.model_type,
+            'model_type_display': model_type_display,
             'api_key': self.api_key,
             'api_secret': self.api_secret if self.model_type == 'baidu' else None,
             'app_id': self.app_id if self.model_type == 'xunfei' else None,

@@ -20,7 +20,7 @@ class LLMService:
         """设置用户ID并加载配置
         Args:
             user_id: 用户ID
-            config_id: 可选，指定使用的配置ID。如果未提供，使用用户第一个有效配置
+            config_id: 可选，指定使用的配置ID。如果未提供，优先使用默认配置，其次使用第一个活跃配置
         """
         self.user_id = user_id
         if config_id:
@@ -30,10 +30,19 @@ class LLMService:
                 is_active=True
             ).first()
         else:
+            # 优先尝试获取默认配置
             self.config = UserLLMConfig.query.filter_by(
                 user_id=user_id,
-                is_active=True
+                is_active=True,
+                is_default=True
             ).first()
+            
+            # 如果没有默认配置，使用第一个活跃配置
+            if not self.config:
+                self.config = UserLLMConfig.query.filter_by(
+                    user_id=user_id,
+                    is_active=True
+                ).first()
 
     def _format_wardrobe_info(self, clothing_items):
         """格式化衣橱信息"""

@@ -1,4 +1,4 @@
- {% extends "base.html" %} {% block title %}API配置管理 - AI穿搭助手{% endblock %} {% block content %}
+{% extends "base.html" %} {% block title %}API配置管理 - AI穿搭助手{% endblock %} {% block content %}
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
@@ -60,6 +60,19 @@
                                 {% for error in form.api_base.errors %} {{ error }} {% endfor %}
                             </div>
                             {% endif %}
+                        </div>
+
+                        <!-- 状态控制 -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                <label class="form-check-label" for="is_active">启用此配置</label>
+                            </div>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="is_default" name="is_default">
+                                <label class="form-check-label" for="is_default">设为默认</label>
+                                <div class="form-text">设为默认后，在聊天界面将优先选择此服务商</div>
+                            </div>
                         </div>
 
                         <!-- 提交按钮 -->
@@ -151,6 +164,8 @@
         const secretKeyField = document.getElementById('secretKeyField');
         const appIdField = document.getElementById('appIdField');
         const apiBaseField = document.getElementById('apiBaseField');
+        const isActiveSwitch = document.getElementById('is_active');
+        const isDefaultSwitch = document.getElementById('is_default');
 
         // 获取用户已保存的LLM配置
         let savedConfigs = [];
@@ -182,6 +197,10 @@
             document.getElementById('api_secret').value = currentConfig?.api_secret || '';
             document.getElementById('app_id').value = currentConfig?.app_id || '';
             document.getElementById('api_base').value = currentConfig?.api_base || '';
+            
+            // 更新开关状态
+            isActiveSwitch.checked = currentConfig ? currentConfig.is_active : true;
+            isDefaultSwitch.checked = currentConfig ? currentConfig.is_default : false;
             
             // 显示/隐藏相关字段
             if (selectedModel === 'baidu') {
@@ -229,6 +248,25 @@
             modelType.addEventListener('change', updateFields);
         } else {
             console.error('Model type selector not found!');
+        }
+
+        // 监听默认开关变化
+        if (isDefaultSwitch) {
+            isDefaultSwitch.addEventListener('change', function() {
+                if (this.checked) {
+                    // 检查是否已有其他默认配置
+                    const hasDefault = savedConfigs.some(config => 
+                        config.is_default && config.model_type !== modelType.value
+                    );
+                    
+                    if (hasDefault) {
+                        const confirmChange = confirm('已有其他AI服务商被设为默认，确定要将当前服务商设为新的默认吗？');
+                        if (!confirmChange) {
+                            this.checked = false;
+                        }
+                    }
+                }
+            });
         }
     });
 

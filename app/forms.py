@@ -1,6 +1,5 @@
-
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, PasswordField
+from wtforms import StringField, SelectField, PasswordField, BooleanField
 from wtforms.validators import DataRequired, Length, Optional
 from app.models.llm_config import SUPPORTED_MODELS
 
@@ -25,6 +24,11 @@ class APIKeyForm(FlaskForm):
     api_base = StringField('API Base URL',
                        validators=[Optional()],
                        description='硅基流动专用(可选)')
+                       
+    is_active = BooleanField('启用此配置', default=True)
+    
+    is_default = BooleanField('设为默认', default=False,
+                           description='设为默认后，在聊天界面将优先选择此服务商')
 
 class LoginForm(FlaskForm):
     """登录表单"""
